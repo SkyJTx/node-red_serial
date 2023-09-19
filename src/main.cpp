@@ -98,27 +98,6 @@ void loop() {
     stringCommand = "";
   }
 
-  /*
-  else if (cmd == "BLINK") {
-    for (int i = 0; i < 3; i++) {
-      if (isOn) {
-        currentColors[i] = onColors[i];
-      }
-      else {
-        currentColors[i] = offColors[i];
-      }
-      analogWrite(ledPins[i], currentColors[i]);
-    }
-    if (isOn) {
-      delay((int)(((float)dlay)*dutyCycle));
-    }
-    else {
-      delay((int)(((float)dlay)*(1-dutyCycle)));
-    }
-    isOn = !isOn;
-  }
-  */
-
   else if (cmd == "BLINK") {
     if ((!isOn) && (!blinkDelay)) {
       Serial.println("STATUS LED ON");
@@ -222,15 +201,6 @@ void loop() {
     Serial.println("IORAW ANALOG " + (String)prevAnalogInp);
   }
 
-  /*
-  stateButton = digitalRead(buttonPin);
-  if ((stateButton != prevStateButton) && ((millis() - buttonMillis) > 1)) {
-    prevStateButton = stateButton;
-    Serial.println("IORAW BUTTON " + (String)prevStateButton);
-    buttonMillis = millis();
-  }
-  */
-
   stateButton = digitalRead(4);
   if (stateButton != prevStateButton) {
     if (millis() - buttonMillis > debounceDelay) {
@@ -248,18 +218,14 @@ void loop() {
         if (millis() - lastClickTime < doubleClickInterval && isWaitingForDoubleClick) {
           Serial.println("IOPRO BUTTON \"Double Click\"");
           isWaitingForDoubleClick = false;
+          isSingleClickLastEvent = false;
           isDoubleClickLastEvent = true;
+          isLongPressLastEvent = false;
           // Code for Double Click
         }
         lastClickTime = millis();
       }
     }
-  }
-  if (stateButton == HIGH && millis() - buttonMillis > doubleClickInterval && isWaitingForDoubleClick) {
-    isWaitingForDoubleClick = false;
-  }
-  if (stateButton == HIGH && isWaitingForLongPress) {
-    isWaitingForLongPress = false;
   }
   if (stateButton == LOW && millis() - buttonMillis > longPressDuration && !isLongPressLastEvent) {
     Serial.println("IOPRO BUTTON \"Long Press\"");
@@ -285,5 +251,11 @@ void loop() {
     isDoubleClickLastEvent = false;
     isLongPressLastEvent = false;
     // Code for No Click
+  }
+  if (stateButton == HIGH && millis() - buttonMillis > doubleClickInterval && isWaitingForDoubleClick) {
+    isWaitingForDoubleClick = false;
+  }
+  if (stateButton == HIGH && isWaitingForLongPress) {
+    isWaitingForLongPress = false;
   }
 }
