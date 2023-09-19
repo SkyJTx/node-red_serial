@@ -1,0 +1,50 @@
+#include "Arduino.h"
+
+int stateButton = LOW;
+int prevStateButton = LOW;
+unsigned long buttonMillis = 0;
+unsigned long lastClickTime = 0;
+const int debounceDelay = 50; // Debounce time in milliseconds
+const int longPressDuration = 1000; // Duration for a long press in milliseconds
+const int doubleClickInterval = 300; // Maximum time between two clicks for a double click
+
+void setup() {
+  pinMode(4, INPUT_PULLUP); // Assuming the button is connected to pin 4
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Read the button state
+  stateButton = digitalRead(4);
+
+  // Debounce the button
+  if (stateButton != prevStateButton) {
+    if (millis() - buttonMillis > debounceDelay) {
+      prevStateButton = stateButton;
+      Serial.println("IORAW BUTTON " + (String)prevStateButton);
+      buttonMillis = millis();
+      
+      // Button was pressed
+      if (stateButton == LOW) {
+        // Check for double click
+        if (millis() - lastClickTime < doubleClickInterval) {
+          Serial.println("Double Click");
+          // Perform double click action here
+        } else {
+          Serial.println("Single Click");
+          // Perform single click action here
+        }
+        
+        lastClickTime = millis();
+      }
+    }
+  }
+
+  // Check for long press
+  if (stateButton == LOW && millis() - buttonMillis > longPressDuration) {
+    Serial.println("Long Press");
+    // Perform long press action here
+    // You can also reset buttonMillis here if you want to prevent multiple long press detections
+    // buttonMillis = millis();
+  }
+}
