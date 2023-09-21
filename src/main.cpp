@@ -17,7 +17,7 @@ unsigned long buttonMillis = 0;
 unsigned long lastClickTime = 0;
 const int debounceDelay = 50;
 const int longPressDuration = 500;
-const int doubleClickInterval = 300;
+const int doubleClickInterval = 250;
 bool noClick = false;
 bool isWaitingForDoubleClick = false;
 bool isWaitingForLongPress = false;
@@ -236,11 +236,11 @@ void loop() {
     // Code for Long Press
   }
   if (stateButton == HIGH && !isDoubleClickLastEvent && !isWaitingForDoubleClick && !isWaitingForLongPress && !noClick && !isSingleClickLastEvent) {
-    Serial.println("IOPRO BUTTON \"Single Press\"");
+    Serial.println("IOPRO BUTTON \"Single Click\"");
     isSingleClickLastEvent = true;
     isDoubleClickLastEvent = false;
     isLongPressLastEvent = false;
-    // Code for Single Press
+    // Code for Single Click
   }
   if (stateButton == HIGH && millis() - buttonMillis > 1000 && !noClick) {
     Serial.println("IOPRO BUTTON \"No Click\"");
