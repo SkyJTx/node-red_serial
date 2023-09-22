@@ -202,7 +202,7 @@ void loop() {
     Serial.println("IORAW ANALOG " + (String)prevAnalogInp);
   }
 
-  stateButton = digitalRead(4);
+  stateButton = digitalRead(buttonPin);
   if (stateButton != prevStateButton) {
     if (millis() - buttonMillis > debounceDelay) {
       noClick = false;
@@ -236,7 +236,7 @@ void loop() {
     isDoubleClickLastEvent = false;
     // Code for Long Press
   }
-  if (stateButton == HIGH && !isDoubleClickLastEvent && !isWaitingForDoubleClick && !isWaitingForLongPress && !noClick && !isSingleClickLastEvent) {
+  if (stateButton == HIGH && !isDoubleClickLastEvent && !isWaitingForDoubleClick && !isWaitingForLongPress && !noClick && !isSingleClickLastEvent && !isLongPressLastEvent) {
     Serial.println("IOPRO BUTTON \"Single Click\"");
     isSingleClickLastEvent = true;
     isDoubleClickLastEvent = false;
