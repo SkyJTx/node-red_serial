@@ -17,16 +17,17 @@ unsigned long buttonMillis = 0;
 unsigned long lastClickTime = 0;
 const int debounceDelay = 50;
 const int longPressDuration = 500;
-const int doubleClickInterval = 300;
-bool longPress = false;
+const int doubleClickInterval = 250;
 bool noClick = false;
 bool isWaitingForDoubleClick = false;
 bool isWaitingForLongPress = false;
+bool isSingleClickLastEvent = false;
 bool isDoubleClickLastEvent = false;
+bool isLongPressLastEvent = false;
 
+int analogPin = A0;
 int analogInp = 0;
 int prevAnalogInp = 0;
-unsigned long analogMillis = 0;
 
 int dlay = 250;
 float dutyCycle = 0.5;
@@ -44,13 +45,12 @@ void setup() {
 
   pinMode(12, OUTPUT); // Digital OUTPUT for VCC 
   digitalWrite(12, HIGH); // OUTPUT VCC as HIGH
-  pinMode(A0, INPUT); // Analog INPUT for Potentiometer
+  pinMode(analogPin, INPUT); // Analog INPUT for Potentiometer
   pinMode(buttonPin, INPUT_PULLUP); // Digital Input of Pullup Switch
   pinMode(5, OUTPUT); // Analog OUTPUT for PWM
 
   blinkMillis = millis();
   buttonMillis = millis();
-  analogMillis = millis();
 }
 
 String command(String cm) {
@@ -86,6 +86,8 @@ void loop() {
       analogWrite(ledPins[i], currentColors[i]);
     }
     isOn = true;
+    Serial.println("STATUS LED ON");
+    stringCommand = "";
   }
   else if (cmd == "OFF") {
     for (int i = 0; i < 3; i++) {
@@ -93,31 +95,13 @@ void loop() {
       analogWrite(ledPins[i], currentColors[i]);
     }
     isOn = false;
+    Serial.println("STATUS LED OFF");
+    stringCommand = "";
   }
-
-  /*
-  else if (cmd == "BLINK") {
-    for (int i = 0; i < 3; i++) {
-      if (isOn) {
-        currentColors[i] = onColors[i];
-      }
-      else {
-        currentColors[i] = offColors[i];
-      }
-      analogWrite(ledPins[i], currentColors[i]);
-    }
-    if (isOn) {
-      delay((int)(((float)dlay)*dutyCycle));
-    }
-    else {
-      delay((int)(((float)dlay)*(1-dutyCycle)));
-    }
-    isOn = !isOn;
-  }
-  */
 
   else if (cmd == "BLINK") {
     if ((!isOn) && (!blinkDelay)) {
+      Serial.println("STATUS LED ON");
       for (int i = 0; i < 3; i++) {
         currentColors[i] = onColors[i];
         analogWrite(ledPins[i], currentColors[i]);
@@ -127,6 +111,7 @@ void loop() {
       blinkMillis = millis();
     }
     else if ((isOn) && (!blinkDelay)) {
+      Serial.println("STATUS LED OFF");
       for (int i = 0; i < 3; i++) {
         currentColors[i] = offColors[i];
         analogWrite(ledPins[i], currentColors[i]);
@@ -157,6 +142,7 @@ void loop() {
       stringCommand = "OFF";
     }
     else {
+      Serial.println("STATUS FREQ " + (String)freq);
       freq = 1/freq*1000;
       dlay = (int)freq;
       onDelay = (int)(((float)dlay)*dutyCycle);
@@ -201,6 +187,8 @@ void loop() {
     }
     else {
       dutyCycle = ((float)dCyc)/100;
+      Serial.println("STATUS HIGH_DUTY_CYCLE " + (String)dutyCycle);
+      Serial.println("STATUS LOW_DUTY_CYCLE " + (String)(1-dutyCycle));
       onDelay = (int)(((float)dlay)*dutyCycle);
       offDelay = (int)(((float)dlay)*(1-dutyCycle));
       stringCommand = "BLINK";
@@ -208,26 +196,15 @@ void loop() {
     analogWrite(5, (int)(((float)dCyc)/100*255));
   }
 
-  analogInp = analogRead(A0);
-  if ((abs(analogInp - prevAnalogInp) > 10) && ((millis() - analogMillis) > 1)) {
+  analogInp = analogRead(analogPin);
+  if ((abs(analogInp - prevAnalogInp) > 10)) {
     prevAnalogInp = analogInp;
     Serial.println("IORAW ANALOG " + (String)prevAnalogInp);
-    analogMillis = millis();
   }
 
-  /*
   stateButton = digitalRead(buttonPin);
-  if ((stateButton != prevStateButton) && ((millis() - buttonMillis) > 1)) {
-    prevStateButton = stateButton;
-    Serial.println("IORAW BUTTON " + (String)prevStateButton);
-    buttonMillis = millis();
-  }
-  */
-
-  stateButton = digitalRead(4);
   if (stateButton != prevStateButton) {
     if (millis() - buttonMillis > debounceDelay) {
-      longPress = false;
       noClick = false;
       prevStateButton = stateButton;
       Serial.println("IORAW BUTTON " + (String)prevStateButton);
@@ -235,37 +212,51 @@ void loop() {
       if (stateButton == LOW) {
         if (!isWaitingForLongPress) {
           isWaitingForLongPress = true;
-        } if (!isWaitingForDoubleClick) {
+        }
+        if (!isWaitingForDoubleClick) {
           isWaitingForDoubleClick = true;
-        } if (millis() - lastClickTime < doubleClickInterval && isWaitingForDoubleClick) {
+        }
+        if (millis() - lastClickTime < doubleClickInterval && isWaitingForDoubleClick) {
           Serial.println("IOPRO BUTTON \"Double Click\"");
           isWaitingForDoubleClick = false;
+          isSingleClickLastEvent = false;
           isDoubleClickLastEvent = true;
+          isLongPressLastEvent = false;
+          // Code for Double Click
         }
         lastClickTime = millis();
       }
-      else {
-        if ((isWaitingForLongPress || (isWaitingForDoubleClick && !isDoubleClickLastEvent))) {
-          Serial.println("IOPRO BUTTON \"Single Click\"");
-          isWaitingForDoubleClick = false;
-          isWaitingForLongPress = false;
-          isDoubleClickLastEvent = false;
-        }
-      }
     }
   }
-  if (stateButton == LOW && millis() - buttonMillis > longPressDuration && !longPress) {
+  if (stateButton == LOW && millis() - buttonMillis > longPressDuration && !isLongPressLastEvent) {
     Serial.println("IOPRO BUTTON \"Long Press\"");
-    longPress = true;
+    isLongPressLastEvent = true;
     isWaitingForLongPress = false;
-    isWaitingForDoubleClick = false;
+    isSingleClickLastEvent = false;
     isDoubleClickLastEvent = false;
+    // Code for Long Press
   }
-  if (stateButton == HIGH && millis() - buttonMillis > 500 && !noClick) {
+  if (stateButton == HIGH && !isDoubleClickLastEvent && !isWaitingForDoubleClick && !isWaitingForLongPress && !noClick && !isSingleClickLastEvent && !isLongPressLastEvent) {
+    Serial.println("IOPRO BUTTON \"Single Click\"");
+    isSingleClickLastEvent = true;
+    isDoubleClickLastEvent = false;
+    isLongPressLastEvent = false;
+    // Code for Single Click
+  }
+  if (stateButton == HIGH && millis() - buttonMillis > 1000 && !noClick) {
     Serial.println("IOPRO BUTTON \"No Click\"");
     noClick = true;
     isWaitingForDoubleClick = false;
     isWaitingForLongPress = false;
+    isSingleClickLastEvent = false;
     isDoubleClickLastEvent = false;
+    isLongPressLastEvent = false;
+    // Code for No Click
+  }
+  if (stateButton == HIGH && millis() - buttonMillis > doubleClickInterval && isWaitingForDoubleClick) {
+    isWaitingForDoubleClick = false;
+  }
+  if (stateButton == HIGH && isWaitingForLongPress) {
+    isWaitingForLongPress = false;
   }
 }
