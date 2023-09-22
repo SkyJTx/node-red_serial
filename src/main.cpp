@@ -25,6 +25,7 @@ bool isSingleClickLastEvent = false;
 bool isDoubleClickLastEvent = false;
 bool isLongPressLastEvent = false;
 
+int analogPin = A0;
 int analogInp = 0;
 int prevAnalogInp = 0;
 
@@ -44,7 +45,7 @@ void setup() {
 
   pinMode(12, OUTPUT); // Digital OUTPUT for VCC 
   digitalWrite(12, HIGH); // OUTPUT VCC as HIGH
-  pinMode(A0, INPUT); // Analog INPUT for Potentiometer
+  pinMode(analogPin, INPUT); // Analog INPUT for Potentiometer
   pinMode(buttonPin, INPUT_PULLUP); // Digital Input of Pullup Switch
   pinMode(5, OUTPUT); // Analog OUTPUT for PWM
 
@@ -195,7 +196,7 @@ void loop() {
     analogWrite(5, (int)(((float)dCyc)/100*255));
   }
 
-  analogInp = analogRead(A0);
+  analogInp = analogRead(analogPin);
   if ((abs(analogInp - prevAnalogInp) > 10)) {
     prevAnalogInp = analogInp;
     Serial.println("IORAW ANALOG " + (String)prevAnalogInp);
