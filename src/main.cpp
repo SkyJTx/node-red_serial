@@ -155,6 +155,7 @@ void loop() {
 
   else if (cmd == "SET_COLOR") {
     int spacePos;
+    Serial.println("STATUS COLORS " + var);
     for (int i = 0; i < 3; i++) {
       spacePos = var.indexOf(' ');
       if (spacePos != 1) {
@@ -172,6 +173,7 @@ void loop() {
     for (int i = 0; i < 3; i++) {
       onColors[i] = 0;
     }
+    Serial.println("STATUS COLORS 0 0 0");
     stringCommand = "ON";
   }
 
@@ -199,7 +201,7 @@ void loop() {
   }
 
   analogInp = analogRead(analogPin);
-  if ((abs(analogInp - prevAnalogInp) > 10) && (millis() - analogMillis > 50)) {
+  if ((abs(analogInp - prevAnalogInp) > 10) && (millis() - analogMillis > 100)) {
     prevAnalogInp = analogInp;
     Serial.println("IORAW ANALOG " + (String)prevAnalogInp);
     analogMillis = millis();
@@ -257,9 +259,11 @@ void loop() {
     // Code for No Click
   }
   if (stateButton == HIGH && millis() - buttonMillis > doubleClickInterval && isWaitingForDoubleClick) {
+    Serial.println("DEBUG EVENT_DOUBLE_CLICK Double Click Timeout");
     isWaitingForDoubleClick = false;
   }
   if (stateButton == HIGH && isWaitingForLongPress) {
+    Serial.println("DEBUG EVENT_LONG_PRESS Long Press Timeout");
     isWaitingForLongPress = false;
   }
 }
