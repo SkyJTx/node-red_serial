@@ -28,6 +28,7 @@ bool isLongPressLastEvent = false;
 int analogPin = A0;
 int analogInp = 0;
 int prevAnalogInp = 0;
+int analogMillis = 0;
 
 int dlay = 250;
 float dutyCycle = 0.5;
@@ -51,6 +52,7 @@ void setup() {
 
   blinkMillis = millis();
   buttonMillis = millis();
+  analogMillis = millis();
 }
 
 String command(String cm) {
@@ -197,9 +199,10 @@ void loop() {
   }
 
   analogInp = analogRead(analogPin);
-  if ((abs(analogInp - prevAnalogInp) > 10)) {
+  if ((abs(analogInp - prevAnalogInp) > 10) && (millis() - analogMillis > 50)) {
     prevAnalogInp = analogInp;
     Serial.println("IORAW ANALOG " + (String)prevAnalogInp);
+    analogMillis = millis();
   }
 
   stateButton = digitalRead(buttonPin);
