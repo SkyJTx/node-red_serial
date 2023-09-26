@@ -1,0 +1,171 @@
+#include<WiFi.h>
+#include<PubSubClient.h>
+#define WIFI_STA_NAME "Rookies111"
+#define WIFI_STA_PASS "dmdj9571"
+#define MQTT_SERVER "mysoftdev.ddns.net"
+#define MQTT_PORT 1883
+#define client_name "esp32"
+#define LEDSIGNALS "LEDSIGNALS"
+String stringCommand = "";
+String prevStringCommand = "";
+String cmd = "";
+String var = "";
+bool isOn = true;
+int ledPins[] = {11, 9, 10};
+unsigned int currentColors[] = {255, 255, 255};
+unsigned int onColors[] = {0, 0, 0};
+unsigned int offColors[] = {255, 255, 255};
+
+unsigned int buttonPin = 4;
+int stateButton = LOW;
+int prevStateButton = LOW;
+unsigned long buttonMillis = 0;
+unsigned long lastClickTime = 0;
+const int debounceDelay = 50;
+const int longPressDuration = 500;
+const int doubleClickInterval = 250;
+bool noClick = false;
+bool isWaitingForDoubleClick = false;
+bool isWaitingForLongPress = false;
+bool isSingleClickLastEvent = false;
+bool isDoubleClickLastEvent = false;
+bool isLongPressLastEvent = false;
+
+int analogPin = 32;
+int analogInp = 0;
+int prevAnalogInp = 0;
+
+int dlay = 250;
+float dutyCycle = 0.5;
+unsigned long blinkMillis = 0;
+bool blinkDelay = false;
+unsigned long onDelay = (int)(((float)dlay)*dutyCycle);
+unsigned long offDelay = (int)(((float)dlay)*(1-dutyCycle));
+
+WiFiClient client;
+PubSubClient mqtt(client);
+
+void setup() {
+  Serial.begin(115200); // Set BAUD_RATE
+
+  pinMode(analogPin, INPUT); // Analog INPUT for Potentiometer
+  pinMode(buttonPin, INPUT_PULLUP); // Digital Input of Pullup Switch
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_STA_NAME,WIFI_STA_PASS);
+  blinkMillis = millis();
+  buttonMillis = millis();
+  
+  mqtt.setServer(MQTT_SERVER,MQTT_PORT);
+  mqtt.setCallback(callback);
+  mqtt.subscribe(LEDSIGNALS);
+}
+
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(LEDSIGNALS);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+
+}
+
+
+
+void loop() {
+
+
+  analogInp = analogRead(analogPin);
+  if ((abs(analogInp - prevAnalogInp) > 10)) {
+    prevAnalogInp = analogInp;
+    if (mqtt.connect(client_name)) 
+    {   
+      cmd = "IORAW ANALOG " + (String)prevAnalogInp;
+      mqtt.publish(LEDSIGNALS, cmd.c_str());
+      Serial.println("IORAW ANALOG " + (String)prevAnalogInp);                    
+    } 
+    
+  }
+
+  stateButton = digitalRead(4);
+  if (stateButton != prevStateButton) {
+    if (millis() - buttonMillis > debounceDelay) {
+      noClick = false;
+      prevStateButton = stateButton;
+      if (mqtt.connect(client_name)) {
+        cmd = "IORAW BUTTON " + (String)prevStateButton;
+        mqtt.publish(LEDSIGNALS, cmd.c_str());
+        Serial.println("IORAW BUTTON " + (String)prevStateButton);                    
+      } 
+    
+      buttonMillis = millis();
+      if (stateButton == LOW) {
+        if (!isWaitingForLongPress) {
+          isWaitingForLongPress = true;
+        }
+        if (!isWaitingForDoubleClick) {
+          isWaitingForDoubleClick = true;
+        }
+        if (millis() - lastClickTime < doubleClickInterval && isWaitingForDoubleClick) {
+          if (mqtt.connect(client_name)) {   
+            mqtt.publish(LEDSIGNALS, "IOPRO BUTTON \"Double Click\"");
+            Serial.println("IOPRO BUTTON \"Double Click\"");                    
+          } 
+          isWaitingForDoubleClick = false;
+          isSingleClickLastEvent = false;
+          isDoubleClickLastEvent = true;
+          isLongPressLastEvent = false;
+          // Code for Double Click
+        }
+        lastClickTime = millis();
+      }
+    }
+  }
+  if (stateButton == LOW && millis() - buttonMillis > longPressDuration && !isLongPressLastEvent) {
+    if (mqtt.connect(client_name)) {   
+            mqtt.publish(LEDSIGNALS, "IOPRO BUTTON \"Long Press\"");
+            Serial.println("IOPRO BUTTON \"Long Press\"");                    
+          } 
+    Serial.println("IOPRO BUTTON \"Long Press\"");
+    isLongPressLastEvent = true;
+    isWaitingForLongPress = false;
+    isSingleClickLastEvent = false;
+    isDoubleClickLastEvent = false;
+    // Code for Long Press
+  }
+  if (stateButton == HIGH && !isDoubleClickLastEvent && !isWaitingForDoubleClick && !isWaitingForLongPress && !noClick && !isSingleClickLastEvent) {
+    if (mqtt.connect(client_name)) {   
+            mqtt.publish(LEDSIGNALS, "IOPRO BUTTON \"Single Click\"");
+            Serial.println("IOPRO BUTTON \"Single Click\"");                    
+          }
+    
+    isSingleClickLastEvent = true;
+    isDoubleClickLastEvent = false;
+    isLongPressLastEvent = false;
+    // Code for Single Click
+  }
+  if (stateButton == HIGH && millis() - buttonMillis > 1000 && !noClick) {
+      if (mqtt.connect(client_name)) {   
+            mqtt.publish(LEDSIGNALS, "IOPRO BUTTON \"No Click\"");
+            Serial.println("IOPRO BUTTON \"No Click\"");                    
+          }
+    
+    noClick = true;
+    isWaitingForDoubleClick = false;
+    isWaitingForLongPress = false;
+    isSingleClickLastEvent = false;
+    isDoubleClickLastEvent = false;
+    isLongPressLastEvent = false;
+    // Code for No Click
+  }
+  if (stateButton == HIGH && millis() - buttonMillis > doubleClickInterval && isWaitingForDoubleClick) {
+    isWaitingForDoubleClick = false;
+  }
+  if (stateButton == HIGH && isWaitingForLongPress) {
+    isWaitingForLongPress = false;
+  }
+
+
+}
