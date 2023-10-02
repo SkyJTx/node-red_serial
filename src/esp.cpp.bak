@@ -76,7 +76,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void loop() {
 
-
   analogInp = analogRead(analogPin);
   if ((abs(analogInp - prevAnalogInp) > 10)) {
     prevAnalogInp = analogInp;

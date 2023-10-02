@@ -50,9 +50,9 @@ void setup() {
   pinMode(buttonPin, INPUT_PULLUP); // Digital Input of Pullup Switch
   pinMode(5, OUTPUT); // Analog OUTPUT for PWM
 
-  blinkMillis = millis();
-  buttonMillis = millis();
-  analogMillis = millis();
+  blinkMillis = millis(); // Initialize millis for blink delay
+  buttonMillis = millis(); // Initialize millis for button delay
+  analogMillis = millis(); // Initialize millis for analog delay
 }
 
 String command(String cm) {
